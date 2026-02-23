@@ -7,9 +7,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewbinding.ViewBinding
 import com.hasanzade.mviex.databinding.FragmentCalcBinding
+import kotlinx.coroutines.launch
 
 class CalcFragment : Fragment() {
 
@@ -42,15 +45,22 @@ class CalcFragment : Fragment() {
             viewModel.onIntent(IntentCalc.CalculateClicked)
         }
 
-        lifecycleScope.launchWhenStarted {
-            viewModel.state.collect { state ->
-                render(state)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { state -> render(state) }
             }
         }
     }
 
     private fun render(state: NumState) {
         binding.resultText.text = state.result?.toString().orEmpty()
+
+        if (state.error != null) {
+            binding.errorText.visibility = View.VISIBLE
+            binding.errorText.text = state.error
+        } else {
+            binding.errorText.visibility = View.GONE
+        }
     }
 
     override fun onDestroyView() {
